@@ -1,0 +1,69 @@
+version: "2.2"
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html
+# https://www.elastic.co/guide/en/kibana/current/docker.html
+# https://edward-cernera.medium.com/deploy-a-multi-node-elasticsearch-instance-with-docker-compose-ef63625f246e
+volumes:
+  esdata1:
+    driver: local
+  esdata2:
+    driver: local
+
+networks:
+  esnet:
+    driver: bridge
+
+services:
+  es-learn1:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.11.2
+    container_name: es-learn1
+    environment:
+      - cluster.name=es-docker-cluster
+      - node.name=es-learn1
+      - discovery.seed_hosts=es-learn2
+      - cluster.initial_master_nodes=es-learn1, es-learn2
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata1:/usr/share/elasticsearch/data
+    ports:
+      - 9201:9200
+      - 9301:9300
+    networks:
+      - esnet
+
+  es-learn2:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.11.2
+    container_name: es-learn2
+    environment:
+      - cluster.name=es-docker-cluster
+      - node.name=es-learn2
+      - discovery.seed_hosts=es-learn1
+      - cluster.initial_master_nodes=es-learn1, es-learn2
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata2:/usr/share/elasticsearch/data
+    networks:
+      - esnet
+
+  kibana-learn:
+    image: docker.elastic.co/kibana/kibana:7.11.2
+    container_name: kibana-learn
+    environment:
+      ELASTICSEARCH_HOSTS: http://es-learn1:9200
+    depends_on:
+      - es-learn1
+      - es-learn2
+    ports:
+      - 5602:5601
+    networks:
+      - esnet
