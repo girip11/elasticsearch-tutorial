@@ -304,3 +304,10 @@ POST products/_search
 
 - Bulk api is **efficient**. Ex: Many write operations(like import data) at the same time.
 - Bulk api **supports optimistic concurrency control** by adding `if_primary_term` and `if_seq_no` parameters in the actions metadata.
+
+## Bulk api using curl
+
+```Bash
+cd "directory_containing_json"
+curl -H "Content-Type:application/x-ndjson" -XPOST "http://localhost:9201/products/_bulk" --data-binary "@filename.json"
+```

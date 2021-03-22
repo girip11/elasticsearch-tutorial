@@ -4,7 +4,7 @@
 
 ### 1. Using Query DSL
 
-Recommended using this
+This approach is recommended. [Query DSL documentation](https://www.elastic.co/guide/en/elasticsearch/reference/6.8//query-dsl.html). If query DSL can be thought of as an abstract syntax tree, then leaf nodes contain the search condition(range check, value equals check) while the compound nodes(intermediate nodes in the tree) contain the logical operations that associates the leaf nodes.
 
 ```text
 GET products/_search
@@ -41,6 +41,19 @@ GET products/_search
 
     }
   }
+}
+```
+
+## Select only the required fields
+
+```JSON
+GET products/_search
+{
+  "query": {
+    "match_all": {}
+  },
+  "fields": ["name", "price"],
+  "_source": false
 }
 ```
 
@@ -177,12 +190,53 @@ GET products/_explain/100
 }
 ```
 
-## Query contexts
+## Query contexts and filter contexts
 
-- Query context or filter context
-- Filter context - ES does not evaluate relevance scores.
+### Query context
+
+- In this context, the query answers the question "How well does this document match this query clause"?. R
 - Relevance score is computed only in the query context.
-- Filter context is boolean (does the field contains the search term or not)
+
+> Query context is in effect whenever a query clause is passed to a query parameter, such as the query parameter in the search API
+
+```JSON
+GET recipes/_search
+{
+  "query": {
+      "bool": {
+        "must": [
+          { "match": { "title": "Spaghetti or Pasta" }},
+          { "match": { "description": "\"olive oil\"" }}
+        ]
+      }
+  }
+}
+```
+
+### Filter context
+
+- In this context, a query clause answers the question "Does this document match the query clause?". The answer is a **yes or no**
+- In this context, ES does not evaluate relevance scores.
+
+> Filter context is in effect whenever a query clause is passed to a filter parameter, such as the filter or must_not parameters in the bool query, the filter parameter in the constant_score query, or the filter aggregation.
+
+```JSON
+// find a recipe that has preparation time equals 10 minutes and
+// servings.min between 2 and 5
+GET recipes/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {"term": {"preparation_time_minutes": 10 }},
+        {"range": {
+          "servings.min": {"gte": 2,"lte": 5}
+        }}
+      ]
+    }
+  }
+}
+```
 
 ## Full text queries vs term level queries
 
@@ -242,3 +296,4 @@ GET products/_search
 ## References
 
 - [Query string documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html)
+- [Query and Filter contexts](https://www.elastic.co/guide/en/elasticsearch/reference/7.11/query-filter-context.html)
